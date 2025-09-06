@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Викинги онлайн - OdinSons</title>
+    <link rel="stylesheet" href="main.css">
+    <style>
+        .players-container {
+            margin: 30px auto;
+            max-width: 800px;
+            background: rgba(69, 43, 24, 0.3);
+            border-radius: 8px;
+            border: 1px solid rgba(165, 108, 55, 0.3);
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .players-header {
+            padding: 15px 20px;
+            background: rgba(43, 30, 20, 0.7);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .players-header:hover {
+            background: rgba(43, 30, 20, 0.9);
+        }
+        
+        .players-header h3 {
+            color: var(--accent);
+            font-size: 1.4rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .players-count {
+            background: var(--c-palette-5);
+            color: var(--text);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-left: 10px;
+        }
+        
+        .players-content {
+            max-height: 1000px;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out;
+        }
+        
+        .players-content.collapsed {
+            max-height: 0;
+        }
+        
+        .players-list {
+            padding: 15px 20px;
+        }
+        
+        .player-card {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            margin: 10px 0;
+            background: rgba(69, 43, 24, 0.2);
+            border-radius: 6px;
+            border: 1px solid rgba(165, 108, 55, 0.2);
+            transition: all 0.3s;
+        }
+        
+        .player-card:hover {
+            background: rgba(69, 43, 24, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .player-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 15px;
+            border: 2px solid var(--c-palette-5);
+        }
+        
+        .player-info {
+            flex-grow: 1;
+        }
+        
+        .player-name {
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: var(--accent);
+            margin-bottom: 3px;
+            font-family: 'NordicCyr', 'AveriaSerifLibre', sans-serif;
+        }
+        
+        .player-steamname {
+            font-size: 0.9rem;
+            color: var(--c-palette-4);
+            margin-bottom: 3px;
+            font-style: italic;
+        }
+        
+        .player-steamid {
+            font-size: 0.75rem;
+            color: var(--c-palette-4);
+            font-family: 'AveriaSerifLibre', sans-serif;
+            opacity: 0.7;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #48bb78;
+            margin-left: 10px;
+            flex-shrink: 0;
+        }
+        
+        .players-loading, .players-error {
+            text-align: center;
+            padding: 20px;
+            color: var(--c-palette-4);
+            font-family: 'AveriaSerifLibre', sans-serif;
+        }
+        
+        .players-error {
+            color: #e53e3e;
+        }
+        
+        .players-updated {
+            text-align: center;
+            padding: 10px 20px 20px;
+            color: var(--c-palette-4);
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(165, 108, 55, 0.2);
+            font-family: 'AveriaSerifLibre', sans-serif;
+        }
+        
+        .players-note {
+            text-align: center;
+            margin: 15px auto;
+            max-width: 800px;
+            color: var(--c-palette-4);
+            font-size: 0.9rem;
+            font-family: 'AveriaSerifLibre', sans-serif;
+        }
+        
+        .steam-api-info {
+            text-align: center;
+            margin: 10px auto;
+            max-width: 800px;
+            padding: 10px;
+            background: rgba(69, 43, 24, 0.2);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: var(--c-palette-4);
+        }
+
+        /* Новый стиль для retry-индикатора */
+        .retry-info {
+            text-align: center;
+            padding: 10px;
+            color: var(--c-palette-4);
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="rune-divider">ᛈᚱᛁᛋᛏᚢᛋᛏᚢᛖ</div>
+        
+        <div class="players-container">
+            <div class="players-header" id="playersHeader">
+                <h3>Викингов в мире: <span class="players-count" id="playersCount">0</span></h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 9L12 15L18 9" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            
+            <div class="players-content" id="playersContent">
+                <div class="players-loading" id="playersLoading">Загрузка данных о викингах...</div>
+                <div class="players-list" id="playersList"></div>
+                <div class="players-error" id="playersError" style="display: none;"></div>
+                <div class="players-updated" id="playersUpdated"></div>
+                <div class="retry-info" id="retryInfo" style="display: none;">Попытка переподключения...</div>
+            </div>
+        </div>
+        
+        <div class="players-note">
+            Данные обновляются автоматически каждые 30 секунд, но не чаще чем раз в 5 секунд. При ошибках — retry до 3 раз.
+        </div>
+        
+        <div class="steam-api-info" id="steamApiInfo" style="display: none;">
+            Информация о Steam-аккаунте загружается через Steam Web API
+        </div>
+        
+        <div class="rune-divider">ᛉᛁᛉᛁᚾ</div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const playersHeader = document.getElementById('playersHeader');
+            const playersContent = document.getElementById('playersContent');
+            const playersCount = document.getElementById('playersCount');
+            const playersList = document.getElementById('playersList');
+            const playersLoading = document.getElementById('playersLoading');
+            const playersError = document.getElementById('playersError');
+            const playersUpdated = document.getElementById('playersUpdated');
+            const steamApiInfo = document.getElementById('steamApiInfo');
+            const retryInfo = document.getElementById('retryInfo');
+            
+            let lastFetchTime = 0;
+            let isExpanded = true; 
+            let rotateAngle = 180;
+            let cachedData = null;
+            let autoUpdateInterval = null;
+            
+            const steamApiKey = 'DC26DB5BEF60582AD9359C408F93EC95';
+            
+            const serverUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('http://95.216.34.29:2519/serverinfo');
+            
+            function formatUpdateTime(date) {
+                return `Обновлено: ${date.toLocaleTimeString()}`;
+            }
+            
+            async function getSteamName(steamId) {
+                if (!steamApiKey || steamApiKey === 'DC26DB5BEF60582AD9359C408F93EC95') {
+                    return null;
+                }
+                
+                try {
+                    const response = await fetch(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${steamApiKey}&steamids=${steamId}`);
+                    if (!response.ok) throw new Error('API error');
+                    const data = await response.json();
+                    
+                    if (data.response && data.response.players && data.response.players.length > 0) {
+                        return data.response.players[0].personaname;
+                    }
+                } catch (error) {
+                    console.error('Ошибка получения Steam ника:', error);
+                }
+                
+                return null;
+            }
+=
+            async function fetchWithRetry(url, maxRetries = 3) {
+                for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                    try {
+                        retryInfo.style.display = attempt > 1 ? 'block' : 'none';
+                        retryInfo.textContent = `Попытка ${attempt} из ${maxRetries}...`;
+                        
+                        const response = await fetch(url);
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        
+                        const data = await response.json();
+                        retryInfo.style.display = 'none';
+                        return data;
+                    } catch (err) {
+                        console.error(`Попытка ${attempt} неудачна:`, err);
+                        if (attempt < maxRetries) {
+                            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+                        }
+                    }
+                }
+                throw new Error('Все попытки исчерпаны');
+            }
+            
+            async function fetchServerData() {
+                const now = Date.now();
+              
+                if (now - lastFetchTime < 5000) {
+                    console.log('Throttled: слишком рано');
+                    return;
+                }
+                
+                lastFetchTime = now;
+                
+                playersLoading.style.display = 'block';
+                playersError.style.display = 'none';
+                
+                try {
+                    const data = await fetchWithRetry(serverUrl);
+                    
+                    cachedData = data;
+
+                    await updateUI(data);
+
+                    playersLoading.style.display = 'none';
+                } catch (err) {
+                    console.error('Ошибка fetch:', err);
+                    
+                    if (cachedData) {
+                        console.log('Используем кэш');
+                        await updateUI(cachedData);
+                    } else {
+                        setTimeout(() => {
+                            const demoData = {
+                                "name": "OdinSonsLite",
+                                "playersCount": 2,
+                                "players": [
+                                    {
+                                        "Name": "DrMaD",
+                                        "SteamID": "76561198347247608",
+                                        "AvatarUrl": "https://avatars.steamstatic.com/3367032b07f5e7b7d0ac0f2a61f4c4083872c877_full.jpg"
+                                    },
+                                    {
+                                        "Name": "Лапшеслав",
+                                        "SteamID": "76561198088159603",
+                                        "AvatarUrl": "https://avatars.steamstatic.com/c242d9d3255ca277519a201d830ca650d29f5895_full.jpg"
+                                    }
+                                ]
+                            };
+                            updateUI(demoData);
+                        }, 1000);
+                    }
+                    
+                    playersLoading.style.display = 'none';
+                    playersError.style.display = 'block';
+                    playersError.textContent = 'Ошибка загрузки (проверьте соединение). Используем кэш/демо.';
+                }
+            }
+            
+            async function updateUI(data) {
+                playersCount.textContent = data.playersCount;
+                
+                playersList.innerHTML = '';
+                
+                if (data.players && data.players.length > 0) {
+                    const steamPromises = data.players.map(player => getSteamName(player.SteamID));
+                    const steamNames = await Promise.all(steamPromises);
+                    
+                    if (steamNames.some(name => name !== null) && steamApiKey !== 'DC26DB5BEF60582AD9359C408F93EC95') {
+                        steamApiInfo.style.display = 'block';
+                    }
+                    data.players.forEach((player, index) => {
+                        const steamName = steamNames[index];
+                        const playerCard = document.createElement('div');
+                        playerCard.className = 'player-card';
+                        
+                        playerCard.innerHTML = `
+                            <img src="${player.AvatarUrl}" alt="Аватар" class="player-avatar" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIiBmaWxsPSIjYTU2YzM3Ij48Y2lyY2xlIGN4PSIxMDAiIGN5PSI3MCIgcj0iNTAiIGZpbGw9IiNmNmMwNmYiLz48Y2lyY2xlIGN4PSIxMDAiIGN5PSIyMDAiIHI9IjgwIiBmaWxsPSIjZjZkNmE5Ii8+PC9zdmc+'">
+                            <div class="player-info">
+                                <div class="player-name">${player.Name}</div>
+                                ${steamName ? `<div class="player-steamname">Steam: ${steamName}</div>` : ''}
+                                <div class="player-steamid">ID: ${player.SteamID}</div>
+                            </div>
+                            <div class="status-indicator"></div>
+                        `;
+                        
+                        playersList.appendChild(playerCard);
+                    });
+                } else {
+                    playersList.innerHTML = '<div class="players-loading">В Валькнуте тихо... Нет игроков онлайн</div>';
+                }
+                
+                playersUpdated.textContent = formatUpdateTime(new Date());
+            }
+            
+            playersHeader.addEventListener('click', function() {
+                isExpanded = !isExpanded;
+                
+                rotateAngle = isExpanded ? 180 : 0;
+                playersHeader.querySelector('svg').style.transform = `rotate(${rotateAngle}deg)`;
+                
+                if (isExpanded) {
+                    playersContent.classList.remove('collapsed');
+                    if (!cachedData) fetchServerData();
+                } else {
+                    playersContent.classList.add('collapsed');
+                }
+            });
+            
+            playersUpdated.textContent = formatUpdateTime(new Date());
+            fetchServerData();
+            
+            autoUpdateInterval = setInterval(fetchServerData, 30000);
+            
+            window.addEventListener('beforeunload', () => {
+                clearInterval(autoUpdateInterval);
+            });
+        });
+    </script>
+</body>
+</html>
